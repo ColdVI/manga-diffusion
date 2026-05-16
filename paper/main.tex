@@ -1,0 +1,224 @@
+% CVPR Workshop 4-page format
+% Target: Workshop on Generative Models for Creative Content, CVPR 2026
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+\usepackage{cvpr}
+\usepackage{times}
+\usepackage{epsfig}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage[pagebackref=true,breaklinks=true,letterpaper=true,colorlinks,bookmarks=false]{hyperref}
+
+\cvprfinalcopy  % comment out for blind review
+
+\def\cvprPaperID{****}
+\def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
+
+\begin{document}
+
+\title{Captioning Strategy as a Determinant of Style Fidelity\\
+in LoRA-based Manga Sub-genre Generation}
+
+\author{An{\i}l Keskin\\
+{\tt\small anil04keskin@gmail.com}
+}
+
+\maketitle
+
+%------------------------------------------------------------------------
+\begin{abstract}
+Text-to-image diffusion models have demonstrated remarkable generative capability, yet they consistently reduce the rich diversity of manga into a homogeneous ``anime aesthetic.''
+Fine-tuning via Low-Rank Adaptation (LoRA) offers a computationally tractable path toward sub-genre fidelity, but a critical upstream variable remains largely unexamined: the captioning strategy used to annotate training images.
+We conduct a controlled study comparing two captioning approaches—BLIP-2 automatic captions (free-form natural language) and WD14 tagger outputs (structured Danbooru-style tags)—applied to a curated set of noir manga panels drawn from the Manga109-s dataset.
+Both conditions are trained with identical LoRA hyperparameters on Stable Diffusion XL, and evaluated with FID, CLIP score, and DINOv2 style similarity against a held-out test set.
+Our results show that \emph{[findings to be inserted after evaluation]}, with implications for how practitioners should approach annotation when fine-tuning on niche visual styles.
+\end{abstract}
+
+%------------------------------------------------------------------------
+\section{Introduction}
+
+The rapid maturation of latent diffusion models~\cite{rombach2022ldm,podell2023sdxl} has enabled photorealistic synthesis at scale, yet creative sub-genres remain stubbornly underserved.
+Manga, and in particular its gekiga and noir variants, exhibits a coherent visual language—heavy ink linework, high-contrast screentone shading, claustrophobic panel compositions—that diverges sharply from the clean line art and pastel palettes associated with mainstream anime.
+Prompt engineering alone fails to reproduce this language reliably, and subject-driven methods such as DreamBooth~\cite{ruiz2023dreambooth} or Textual Inversion~\cite{gal2022textual} are prohibitively expensive for researchers without access to large GPU clusters.
+
+LoRA~\cite{hu2021lora} has emerged as the practical middle ground: it injects trainable low-rank matrices into frozen attention layers, achieving style adaptation in under an hour on a single A100.
+However, the quality of a LoRA is fundamentally bounded by the quality of its training captions.
+A caption that accurately names the visual elements of an image guides the cross-attention mechanism toward the correct text–image alignment; a generic or misleading caption can cause the LoRA to memorize spurious correlations rather than the intended style.
+Despite the obvious importance of this choice, caption strategy has not been systematically isolated as an experimental variable in the fine-tuning literature.
+
+This paper fills that gap.
+We curate 200 noir manga panels from Manga109-s~\cite{matsui2017manga109}, apply two automated captioning strategies, train LoRA adapters under otherwise identical conditions, and evaluate style fidelity quantitatively and qualitatively.
+Our contributions are:
+\begin{itemize}
+  \item A reproducible curation protocol for extracting style-coherent panels from annotated manga datasets.
+  \item A direct, controlled comparison of BLIP-2~\cite{li2023blip2} and WD14 tag-based captioning as LoRA training supervision.
+  \item An evaluation benchmark combining FID~\cite{heusel2017fid}, CLIP~\cite{radford2021clip}, and DINOv2~\cite{oquab2023dinov2} metrics for niche-style fidelity.
+\end{itemize}
+
+%------------------------------------------------------------------------
+\section{Related Work}
+
+\subsection{Fine-Tuning Diffusion Models for Style}
+
+The dominant paradigm for personalizing large text-to-image models has evolved through three approaches.
+DreamBooth~\cite{ruiz2023dreambooth} fine-tunes all model weights with a rare token bound to a target concept and employs a class-preservation loss to prevent language drift; this achieves strong subject fidelity but requires full model copies per style and is susceptible to overfitting on small datasets.
+Textual Inversion~\cite{gal2022textual} instead fixes the model and optimizes a new token embedding, yielding a lightweight artifact but limited expressiveness because a single embedding vector must encode the full complexity of a novel concept.
+LoRA~\cite{hu2021lora} offers a complementary trade-off: it injects trainable low-rank decompositions $\Delta W = BA$ (where $B \in \mathbb{R}^{d \times r}$, $A \in \mathbb{R}^{r \times k}$, $r \ll \min(d,k)$) into the query and value projections of each cross-attention layer, adding fewer than 4\% additional parameters while achieving style adaptation on par with full fine-tuning.
+The expressiveness of LoRA scales with rank $r$; prior work has found rank 16–64 sufficient for style transfer tasks~\cite{hu2021lora}.
+Critically, across all three paradigms, caption quality is treated as a given rather than a variable, motivating the present study.
+
+\subsection{Captioning Strategies for Vision-Language Alignment}
+
+BLIP-2~\cite{li2023blip2} bootstraps vision-language alignment by inserting a lightweight Querying Transformer between a frozen image encoder and a frozen large language model, generating fluent free-form captions with minimal fine-tuning cost.
+While BLIP-2 produces grammatically natural descriptions, its training distribution—web-scraped image-text pairs—skews toward photorealistic content, making its captions less precise for niche artistic styles.
+For a noir manga panel, BLIP-2 might output ``a black and white drawing of a man in a hat,'' capturing the denotative content but discarding the stylistic vocabulary (screentone, ink weight, compositional type) that the LoRA needs to internalize.
+
+WD14 taggers~\cite{radford2021clip} take the opposite approach: they are trained on Danbooru, a large community-annotated illustration database, and output structured comma-separated tags drawn from a controlled vocabulary of several thousand terms.
+These tags encode style-relevant attributes explicitly—\texttt{monochrome}, \texttt{screentone}, \texttt{dramatic lighting}, \texttt{1boy}, \texttt{hat}—and because Danbooru covers manga and anime at scale, the tagger's vocabulary is better matched to the domain.
+The trade-off is that tags lack compositional structure; the cross-attention mechanism receives an unordered bag of terms rather than a syntactically coherent description, which may limit fine-grained alignment.
+
+\subsection{Manga Generation and Style Transfer}
+
+The Manga109 dataset~\cite{matsui2017manga109} provides bounding-box annotations for panels, text regions, character faces, and bodies across 109 manga volumes spanning decades of publication.
+Its curated sub-split, Manga109-s, covers 87 works under an approved research license.
+Prior work on manga generation has focused primarily on page layout synthesis and character consistency; DiffSensei~\cite{chen2024diffsensei} is among the first systems to address multi-panel manga story generation using a multimodal LLM to condition a diffusion backbone on character references and dialogue.
+However, DiffSensei targets a broad range of styles and does not isolate sub-genre fidelity as a research objective.
+To our knowledge, no prior work has examined how upstream captioning choices affect the style-specificity of LoRA-trained diffusion models on manga sub-genres.
+
+%------------------------------------------------------------------------
+\section{Method}
+
+\subsection{Dataset Curation}
+
+We extract panels from the 87 works in Manga109-s using the provided XML frame annotations, which give precise bounding boxes for each panel, text region, and character element.
+Rather than relying on contour detection—which degrades on low-resolution scans—we use the ground-truth frame coordinates directly, extracting each panel at its native resolution and then resizing to $768 \times 768$ via center-crop with zero padding to preserve aspect ratio.
+
+To select noir-style works, we inspect a stratified random sample of each title and retain works exhibiting at least two of the following markers: heavy use of black fills, screentone gradients, noirish subject matter (crime, urban, psychological thriller), and predominance of male adult characters in minimal-dialogue panels.
+We sample up to 4 panels per work to ensure stylistic diversity without over-representing any single title.
+After this process, we obtain 348 panels from 87 works, of which 200 are allocated to training and 40 to a held-out test set.
+The train/test split is made at the \emph{work level}, not the page level, to prevent data leakage from a single artist's style appearing in both splits.
+
+\subsection{Captioning Conditions}
+
+All captions are prefixed with the trigger token \texttt{gknoir style,} to bind the LoRA to a unique, out-of-vocabulary identifier.
+
+\paragraph{Condition A — BLIP-2.}
+We load \texttt{Salesforce/blip2-opt-2.7b} in 8-bit precision and run inference on each training panel with greedy decoding.
+The raw caption is prepended with the trigger, yielding descriptions such as ``\textit{gknoir style, a black and white drawing of a man in a coat walking down a rainy street.}''
+
+\paragraph{Condition B — WD14.}
+We run \texttt{SmilingWolf/wd-v1-4-convnext-tagger-v2} via its ONNX export, applying a confidence threshold of 0.35 and filtering copyright tags (Danbooru category 9).
+The output tag set is sorted by confidence and concatenated, then prepended with the trigger: ``\textit{gknoir style, 1boy, monochrome, hat, dramatic lighting, screentone, noir.}''
+
+\subsection{LoRA Training}
+
+We train both conditions on \texttt{stabilityai/stable-diffusion-xl-base-1.0} using kohya\_ss sd-scripts with identical hyperparameters: rank $r=32$, $\alpha=16$, AdamW8bit optimizer, learning rate $10^{-4}$ with cosine-with-restarts schedule (100 warmup steps), 2000 training steps, batch size 2, \texttt{bf16} mixed precision, and xformers attention.
+Each work's panels are repeated $10\times$ per epoch via the \texttt{N\_classname} directory convention.
+Training runs on a single A100 40\,GB GPU and completes in approximately 45 minutes per condition.
+
+\subsection{Evaluation Protocol}
+
+We generate 100 images per condition using 10 fixed prompts (Table~\ref{tab:prompts}) crossed with 10 seeds, and compute three metrics.
+
+\textbf{FID}~\cite{heusel2017fid} measures the Fr\'{e}chet distance between Inception-v3 feature distributions of the 100 generated images and the 40 held-out test panels.
+Lower FID indicates that the generated distribution is closer to the real manga distribution.
+
+\textbf{CLIP score}~\cite{radford2021clip} computes the cosine similarity between each generated image's CLIP-ViT-L/14 embedding and its conditioning prompt embedding, averaged across all 100 images.
+Higher scores indicate better text–image alignment.
+
+\textbf{DINOv2 style similarity}~\cite{oquab2023dinov2} extracts \texttt{dinov2-vitl14} patch-level features from generated images and test panels, and computes the mean cosine similarity between the two distributions.
+DINOv2 features are more sensitive to low-level texture and style than Inception or CLIP features, making this metric especially informative for stylistic fidelity assessment.
+
+We also report all three metrics for a \textbf{baseline} condition: 100 images generated from the same prompts using SDXL with no LoRA.
+
+%------------------------------------------------------------------------
+\section{Experiments}
+
+\subsection{Quantitative Results}
+
+\begin{table}[h]
+\centering
+\caption{Quantitative evaluation results. FID lower is better; CLIP score and DINOv2 similarity higher is better.}
+\label{tab:quant}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Condition} & \textbf{FID}$\downarrow$ & \textbf{CLIP}$\uparrow$ & \textbf{DINO}$\uparrow$ \\
+\midrule
+Baseline (no LoRA) & -- & -- & -- \\
+BLIP-2 (Cond.\ A)  & -- & -- & -- \\
+WD14   (Cond.\ B)  & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\vspace{0.5em}\\
+{\small \textit{To be filled after evaluation runs complete.}}
+\end{table}
+
+\subsection{Qualitative Comparison}
+
+\begin{figure}[h]
+  \centering
+  % \includegraphics[width=\linewidth]{figures/qual_grid.png}
+  \fbox{\parbox{0.9\linewidth}{\centering \vspace{2cm} \textit{Qualitative comparison grid placeholder.\\
+  Rows: 3 eval prompts. Cols: Baseline / BLIP-2 / WD14.} \vspace{2cm}}}
+  \caption{Side-by-side generation comparison for a fixed seed across all three conditions.}
+  \label{fig:qual}
+\end{figure}
+
+\subsection{Evaluation Prompts}
+
+\begin{table}[h]
+\centering
+\caption{Fixed evaluation prompts used for all conditions.}
+\label{tab:prompts}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{cl}
+\toprule
+\textbf{\#} & \textbf{Prompt} \\
+\midrule
+1 & gknoir style, heavy ink linework, close-up, detective in rain, tense \\
+2 & gknoir style, thin linework, wide shot, empty city street, melancholic \\
+3 & gknoir style, heavy ink, over-shoulder, figure in doorway, stark shadows \\
+4 & gknoir style, bold ink, action panel, two figures confronting, tension \\
+5 & gknoir style, fine linework, interior, desk with lamp, quiet solitude \\
+6 & gknoir style, heavy ink, extreme close-up, eyes in shadow, mysterious \\
+7 & gknoir style, crosshatch shading, mid-shot, woman in coat, rainy street \\
+8 & gknoir style, stark contrast, running figure, urgency \\
+9 & gknoir style, screentone, thoughtful expression, window light, introspective \\
+10 & gknoir style, deep blacks, alley at night, architecture detail, foreboding \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+%------------------------------------------------------------------------
+\section{Discussion and Conclusion}
+
+\paragraph{Findings.}
+\textit{[To be written after evaluation. Anticipated structure: state which condition achieves lower FID and higher DINOv2 similarity, discuss why structured tags or free-form captions better capture the stylistic vocabulary of noir manga, note any CLIP score trade-off.]}
+
+\paragraph{Why captioning matters.}
+The cross-attention mechanism in a latent diffusion model learns to associate image regions with text tokens; the granularity and domain-specificity of those tokens directly determines what the LoRA can adapt.
+BLIP-2 captions, trained on photorealistic web data, may produce tokens that the base SDXL model already handles well, offering little signal for style-specific adaptation.
+WD14 tags, derived from the Danbooru illustration community, supply the stylistic vocabulary in a form the model can bind directly to the trigger token.
+We expect this difference to manifest most clearly in DINOv2 similarity, which is sensitive to texture and line quality rather than semantic content.
+
+\paragraph{Limitations.}
+Our study is constrained by the size of Manga109-s and our selection of noir-style works from it; the 200-panel training set is small relative to typical LoRA training corpora.
+We study a single sub-genre; whether the findings generalize to shonen action, shojo romance, or other manga aesthetics remains open.
+Compute constraints limit us to rank-32 experiments for the primary comparison; the rank ablation (16, 64) is deferred to supplementary material.
+
+\paragraph{Conclusion.}
+We have presented a controlled study of captioning strategy as a determinant of LoRA style fidelity, using noir manga as a test domain.
+By holding all hyperparameters constant and varying only the caption source, we isolate the annotation step as an independent variable.
+We release our curation code, caption files, and evaluation scripts to facilitate reproducibility and future comparisons against additional captioning strategies, including structured prompting via large language models.
+
+%------------------------------------------------------------------------
+{\small
+\bibliographystyle{ieee_fullname}
+\bibliography{references}
+}
+
+\end{document}
