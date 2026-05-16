@@ -11,7 +11,7 @@
 **One-line summary:** LoRA fine-tuning on Manga109-s to study how captioning strategy affects sub-genre style fidelity in noir manga generation.  
 **Research question (primary):** Does captioning strategy determine sub-genre style fidelity when fine-tuning diffusion models on a niche manga aesthetic?  
 **Owner:** Anıl  
-**Claude model to use in all API calls:** `claude-sonnet-4-6`  
+**Captioning tools:** BLIP-2 (auto) + WD14 tagger (auto) — no external API needed  
 **Base diffusion model:** `stabilityai/stable-diffusion-xl-base-1.0`  
 **LoRA library:** kohya_ss (training) + HuggingFace PEFT (inference)  
 **Trigger word:** `gknoir` (short, unique, base model does not know this token)
@@ -33,8 +33,7 @@ manga-diffusion-project/
 │   ├── processed/             ← resized, cleaned panels (gitignored)
 │   ├── captions/
 │   │   ├── blip2/             ← auto-generated BLIP-2 captions (.txt per image)
-│   │   ├── wd14/              ← WD14 tagger output (.txt per image)
-│   │   └── claude/            ← Claude API structured captions (.txt per image)
+│   │   └── wd14/              ← WD14 tagger output (.txt per image)
 │   ├── train_set/             ← symlinks or copies for training (gitignored)
 │   └── test_set/              ← held-out images, NEVER used in training (gitignored)
 │
@@ -42,7 +41,6 @@ manga-diffusion-project/
 │   ├── preprocess.py          ← image cleaning, resizing, panel extraction
 │   ├── caption_blip2.py       ← BLIP-2 auto captioning
 │   ├── caption_wd14.py        ← WD14 tagger captioning
-│   ├── caption_claude.py      ← Claude API structured captioning
 │   ├── build_dataset.py       ← assemble final train/test split
 │   └── utils.py               ← shared helpers
 │
@@ -84,7 +82,6 @@ pip install -r requirements.txt
 
 **requirements.txt contents:**
 ```
-anthropic>=0.25.0
 diffusers>=0.27.0
 transformers>=4.40.0
 accelerate>=0.30.0
@@ -116,7 +113,6 @@ xformers
 
 ### Environment variables (create .env file, never commit)
 ```
-ANTHROPIC_API_KEY=your_key_here
 WANDB_API_KEY=your_key_here
 HF_TOKEN=your_key_here
 ```
@@ -148,7 +144,7 @@ HF_TOKEN=your_key_here
 - Write split manifest to `data/split_manifest.json`
 - **Never shuffle after this point — the test set is frozen**
 
-### 3.4 Caption strategies (three conditions — this is the experiment)
+### 3.4 Caption strategies (two conditions — this is the experiment)
 
 **Condition A — BLIP-2 auto captions** (`src/caption_blip2.py`)
 - Load `Salesforce/blip2-opt-2.7b`
@@ -162,50 +158,25 @@ HF_TOKEN=your_key_here
 - Save as `data/captions/wd14/{image_stem}.txt`
 - Example output: `"1boy, monochrome, hat, noir, dramatic lighting, screentone"`
 
-**Condition C — Claude structured captions** (`src/caption_claude.py`)
-- Call `claude-sonnet-4-6` with each image (base64 encoded)
-- Use this exact system prompt:
-
-```
-You are a manga art analyst specializing in noir and gekiga aesthetics.
-For each image, output a caption following this exact structure:
-"{trigger}, {line_style}, {composition}, {subject}, {mood}, {technique}"
-
-Rules:
-- trigger is always: gknoir style
-- line_style: describe ink weight (e.g. "heavy ink linework", "thin precise linework")  
-- composition: panel type (e.g. "close-up panel", "establishing shot", "over-shoulder panel")
-- subject: what is depicted, no character names
-- mood: emotional tone (e.g. "tense atmosphere", "melancholic", "stark and cold")
-- technique: visual techniques (e.g. "deep shadows", "screentone shading", "high contrast")
-
-Output only the caption string. No explanation. No punctuation at end.
-```
-
-- Save as `data/captions/claude/{image_stem}.txt`
-- Example output: `"gknoir style, heavy ink linework, close-up panel, detective in rain, tense atmosphere, deep shadows and screentone shading"`
-- **Rate limit**: add 0.5s sleep between API calls
-
 ---
 
 ## 4. Training
 
 ### 4.1 Experiment matrix
-We train 3 LoRA models, one per captioning condition. All other hyperparameters identical.
+We train 2 LoRA models, one per captioning condition. All other hyperparameters identical.
 
 | Run | Caption source | Rank | Steps | LR | W&B run name |
 |-----|---------------|------|-------|----|--------------|
 | A | BLIP-2 | 32 | 2000 | 1e-4 | `blip2-rank32` |
 | B | WD14 | 32 | 2000 | 1e-4 | `wd14-rank32` |
-| C | Claude | 32 | 2000 | 1e-4 | `claude-rank32` |
 
-After primary results, ablation runs if time permits:
+After primary results, ablation runs if time permits (using winning condition):
 | Run | Caption source | Rank | Steps | Notes |
 |-----|---------------|------|-------|-------|
-| C-r16 | Claude | 16 | 2000 | rank ablation |
-| C-r64 | Claude | 64 | 2000 | rank ablation |
-| C-s1000 | Claude | 32 | 1000 | steps ablation |
-| C-s3000 | Claude | 32 | 3000 | steps ablation |
+| W-r16 | winning condition | 16 | 2000 | rank ablation |
+| W-r64 | winning condition | 64 | 2000 | rank ablation |
+| W-s1000 | winning condition | 32 | 1000 | steps ablation |
+| W-s3000 | winning condition | 32 | 3000 | steps ablation |
 
 ### 4.2 kohya config template (write to `training/configs/lora_rank32.toml`)
 ```toml
@@ -261,7 +232,7 @@ Cells in order:
 ## 5. Evaluation
 
 ### 5.1 Generate samples (`evaluation/generate_samples.py`)
-- For each trained LoRA (A, B, C):
+- For each trained LoRA (A, B):
   - Generate 100 images using 10 fixed prompts × 10 seeds
   - Fixed prompts are standardized — same for all conditions:
     ```python
@@ -307,7 +278,6 @@ run_name, fid, clip_score, dino_sim, notes
 baseline, X, X, X, base SDXL no LoRA
 blip2-rank32, X, X, X, condition A
 wd14-rank32, X, X, X, condition B
-claude-rank32, X, X, X, condition C
 ```
 
 ---
@@ -336,7 +306,7 @@ Deploy to HuggingFace Spaces. Space URL goes in paper and README.
 
 ## 7. Paper Outline (`paper/outline.md`)
 
-**Title (working):** "Captioning Strategy as a Determinant of Style Fidelity in LoRA-based Manga Sub-genre Generation"
+**Title (working):** "BLIP-2 vs Tag-based Captioning: Effect on Style Fidelity in LoRA Fine-tuning for Noir Manga Generation"
 
 **Target venue:** CVPR 2026 Workshop on Generative Models for Creative Content (4-page format)
 
@@ -348,7 +318,7 @@ Problem → Method → Finding → Implication
 **1. Introduction** (0.5 page)
 - Diffusion models generate generic "anime/manga" but fail on sub-genres
 - Captioning is understudied as a variable in style-specific fine-tuning
-- We compare three strategies on noir manga (Manga109-s)
+- We compare two strategies on noir manga (Manga109-s)
 - Contributions: curation protocol, captioning comparison, evaluation benchmark
 
 **2. Related Work** (0.5 page)
@@ -358,13 +328,13 @@ Problem → Method → Finding → Implication
 
 **3. Method** (1 page)
 - 3.1 Dataset curation from Manga109-s (noir sub-genre selection criteria)
-- 3.2 Three captioning strategies (A: BLIP-2, B: WD14, C: Claude-assisted structured)
+- 3.2 Two captioning strategies (A: BLIP-2, B: WD14)
 - 3.3 LoRA training setup (same hyperparams across conditions)
 - 3.4 Evaluation protocol
 
 **4. Experiments** (1.5 pages)
 - 4.1 Quantitative results table (FID / CLIP / DINO per condition)
-- 4.2 Qualitative comparison grids (same prompt, 4 conditions side by side)
+- 4.2 Qualitative comparison grids (same prompt, 3 conditions side by side)
 - 4.3 Ablation: rank and training steps effect on best condition
 
 **5. Discussion & Conclusion** (0.5 page)
@@ -393,31 +363,29 @@ DiffSensei 2024 — manga generation (arxiv:2412.19303)
 Claude Code: update this section as tasks complete. Change `[ ]` to `[x]`.
 
 ### Week 1 — Data & Captioning
-- [ ] Project folder and git initialized
-- [ ] Python venv created, requirements installed
-- [ ] `.env` file created with API keys
+- [x] Project folder and git initialized
+- [x] Python venv created, requirements installed
+- [x] `.env` file created with API keys
 - [ ] W&B project created and login confirmed
-- [ ] Manga109-s files moved to `data/raw/`
-- [ ] `src/preprocess.py` written and tested
-- [ ] Train/test split generated, `data/split_manifest.json` saved
-- [ ] `src/caption_blip2.py` written and run on train set
-- [ ] `src/caption_wd14.py` written and run on train set
-- [ ] `src/caption_claude.py` written and run on train set
-- [ ] Caption quality spot-checked manually (10 samples per condition)
-- [ ] `data/train_set/` assembled with images + caption .txt files
+- [x] Manga109-s files moved to `data/raw/`
+- [x] `src/preprocess.py` written and tested
+- [x] Train/test split generated, `data/split_manifest.json` saved
+- [x] `src/caption_blip2.py` written and run on train set
+- [x] `src/caption_wd14.py` written and run on train set
+- [x] Caption quality spot-checked manually (10 samples per condition)
+- [x] `data/train_set/` assembled with images + caption .txt files
 
 ### Week 2 — Training
 - [ ] kohya_ss installed on Colab
-- [ ] `training/configs/lora_rank32.toml` created for all 3 conditions
-- [ ] `training/train_colab.ipynb` created and tested
-- [ ] Run A (BLIP-2) trained, weights saved
-- [ ] Run B (WD14) trained, weights saved
-- [ ] Run C (Claude) trained, weights saved
-- [ ] All 3 runs visible in W&B with loss curves
+- [x] `training/configs/lora_rank32.toml` created for all 2 conditions
+- [x] `training/train_colab.ipynb` created and tested
+- [x] Run A (BLIP-2) trained, weights saved
+- [x] Run B (WD14) trained, weights saved
+- [ ] All 2 runs visible in W&B with loss curves
 - [ ] Qualitative spot-check: generate 5 images per LoRA, compare visually
 
 ### Week 3 — Evaluation & Demo
-- [ ] `evaluation/generate_samples.py` written and run for all conditions
+- [ ] `evaluation/generate_samples.py` written and run for all conditions (use eval_colab.ipynb)
 - [ ] FID computed for all conditions
 - [ ] CLIP score computed for all conditions
 - [ ] DINO similarity computed for all conditions
@@ -429,10 +397,13 @@ Claude Code: update this section as tasks complete. Change `[ ]` to `[x]`.
 
 ### Week 4 — Paper & Polish (buffer)
 - [ ] Ablation runs completed (rank / steps)
-- [ ] `paper/outline.md` converted to full draft
+- [x] `paper/outline.md` written (structure + reference list)
+- [x] `paper/main.tex` drafted (Intro, Related Work, Method complete; Results/Discussion are placeholders pending evaluation)
+- [x] `paper/references.bib` complete (12 entries)
+- [ ] Quantitative results table filled in main.tex (waiting on evaluation)
+- [ ] Qualitative figure `paper/figures/qual_grid.png` generated
+- [ ] Abstract final sentence written (waiting on findings)
 - [ ] All figures finalized
-- [ ] `references.bib` complete
-- [ ] Abstract written
 - [ ] Paper submitted to target workshop (or arXiv preprint)
 
 ---
@@ -440,7 +411,6 @@ Claude Code: update this section as tasks complete. Change `[ ]` to `[x]`.
 ## 9. Conventions Claude Code Must Follow
 
 - **Always activate venv** before running any python script: `source venv/bin/activate`
-- **Never hardcode API keys** — always read from `.env` using `python-dotenv`
 - **Every script must have a `--dry-run` flag** that processes 3 images only (for testing)
 - **Log everything** — every script writes a log file to `logs/{script_name}_{timestamp}.log`
 - **W&B logging** — any training or evaluation script logs metrics to W&B
@@ -467,4 +437,4 @@ This keeps the entire project state in one readable file that any AI assistant c
 
 ---
 
-*Last updated: Week 0 — project initialized*
+*Last updated: Week 1 complete — all data, captions, and training configs ready*
