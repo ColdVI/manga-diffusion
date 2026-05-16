@@ -1,0 +1,13 @@
+anthropic>=0.25.0
+diffusers>=0.27.0
+transformers>=4.40.0
+accelerate>=0.30.0
+torch>=2.2.0
+pillow>=10.0.0
+tqdm>=4.66.0
+wandb>=0.17.0
+datasets>=2.19.0
+open-clip-torch>=2.24.0
+pytorch-fid>=0.3.0
+gradio>=4.0.0
+python-dotenv>=1.0.0

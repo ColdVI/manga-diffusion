@@ -1,0 +1,30 @@
+# Environment
+.env
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+
+# Data (large files, gitignored)
+data/raw/
+data/processed/
+data/train_set/
+data/test_set/
+
+# Training outputs
+training/outputs/
+
+# Logs
+logs/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Model caches
+*.ckpt
+*.safetensors
+*.bin
+
+# W&B
+wandb/
