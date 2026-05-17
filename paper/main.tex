@@ -1,22 +1,25 @@
-% CVPR Workshop 4-page format
+% CVPR Workshop 4-page format (self-contained, no cvpr.sty needed)
 % Target: Workshop on Generative Models for Creative Content, CVPR 2026
 \documentclass[10pt,twocolumn,letterpaper]{article}
 
-\usepackage{cvpr}
+\usepackage[top=2.5cm,bottom=2.5cm,left=1.9cm,right=1.9cm,columnsep=0.8cm]{geometry}
 \usepackage{times}
-\usepackage{epsfig}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{xcolor}
-\usepackage[pagebackref=true,breaklinks=true,letterpaper=true,colorlinks,bookmarks=false]{hyperref}
+\usepackage{microtype}
+\usepackage[breaklinks=true,colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue]{hyperref}
 
-\cvprfinalcopy  % comment out for blind review
+% Title formatting
+\usepackage{titlesec}
+\titleformat{\section}{\normalfont\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries}{\thesubsection}{1em}{}
 
-\def\cvprPaperID{****}
-\def\httilde{\mbox{\tt\raisebox{-.5ex}{\symbol{126}}}}
+\setlength{\parindent}{1em}
+\setlength{\parskip}{0pt}
 
 \begin{document}
 
