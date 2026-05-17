@@ -11,6 +11,7 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{xcolor}
+\usepackage{float}
 \usepackage{microtype}
 \usepackage[breaklinks=true,colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue]{hyperref}
 
@@ -161,9 +162,9 @@ WD14   (Cond.\ B)  & 272.13 & 0.2718 & 0.2738 \\
 
 \subsection{Qualitative Comparison}
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth]{figures/qual_grid.png}
+  \includegraphics[width=\linewidth,height=0.42\textheight,keepaspectratio]{figures/qual_grid.png}
   \caption{Qualitative comparison for three prompts (rows) across all conditions (columns), fixed seed 0.
   \textbf{Left}: baseline SDXL generates photorealistic color images with no manga character.
   \textbf{Center}: BLIP-2 LoRA produces consistent ink linework, screentone texture, and panel-appropriate compositions.
@@ -173,7 +174,7 @@ WD14   (Cond.\ B)  & 272.13 & 0.2718 & 0.2738 \\
 
 \subsection{Evaluation Prompts}
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \caption{Fixed evaluation prompts used for all conditions.}
 \label{tab:prompts}
