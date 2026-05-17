@@ -385,11 +385,11 @@ Claude Code: update this section as tasks complete. Change `[ ]` to `[x]`.
 - [ ] Qualitative spot-check: generate 5 images per LoRA, compare visually
 
 ### Week 3 — Evaluation & Demo
-- [ ] `evaluation/generate_samples.py` written and run for all conditions (use eval_colab.ipynb)
-- [ ] FID computed for all conditions
-- [ ] CLIP score computed for all conditions
-- [ ] DINO similarity computed for all conditions
-- [ ] `evaluation/results/metrics_summary.csv` populated
+- [x] `evaluation/generate_samples.py` written and run for all conditions (use eval_colab.ipynb)
+- [x] FID computed for all conditions
+- [x] CLIP score computed for all conditions
+- [x] DINO similarity computed for all conditions
+- [x] `evaluation/results/metrics_summary.csv` populated
 - [ ] Qualitative comparison grid images saved to `paper/figures/`
 - [ ] Gradio demo app written (`demo/app.py`)
 - [ ] Demo deployed to HuggingFace Spaces
@@ -400,9 +400,9 @@ Claude Code: update this section as tasks complete. Change `[ ]` to `[x]`.
 - [x] `paper/outline.md` written (structure + reference list)
 - [x] `paper/main.tex` drafted (Intro, Related Work, Method complete; Results/Discussion are placeholders pending evaluation)
 - [x] `paper/references.bib` complete (12 entries)
-- [ ] Quantitative results table filled in main.tex (waiting on evaluation)
+- [x] Quantitative results table filled in main.tex
 - [ ] Qualitative figure `paper/figures/qual_grid.png` generated
-- [ ] Abstract final sentence written (waiting on findings)
+- [x] Abstract final sentence written (BLIP-2 wins FID+DINO, WD14 wins CLIP)
 - [ ] All figures finalized
 - [ ] Paper submitted to target workshop (or arXiv preprint)
 

@@ -35,7 +35,7 @@ Text-to-image diffusion models have demonstrated remarkable generative capabilit
 Fine-tuning via Low-Rank Adaptation (LoRA) offers a computationally tractable path toward sub-genre fidelity, but a critical upstream variable remains largely unexamined: the captioning strategy used to annotate training images.
 We conduct a controlled study comparing two captioning approaches—BLIP-2 automatic captions (free-form natural language) and WD14 tagger outputs (structured Danbooru-style tags)—applied to a curated set of noir manga panels drawn from the Manga109-s dataset.
 Both conditions are trained with identical LoRA hyperparameters on Stable Diffusion XL, and evaluated with FID, CLIP score, and DINOv2 style similarity against a held-out test set.
-Our results show that \emph{[findings to be inserted after evaluation]}, with implications for how practitioners should approach annotation when fine-tuning on niche visual styles.
+Our results show that BLIP-2 free-form captions produce stronger style fidelity (FID 261.97, DINOv2 similarity 0.322) while WD14 structured tags yield better text-prompt alignment (CLIP score 0.272 vs.\ 0.251), with implications for how practitioners should prioritize captioning strategies when fine-tuning on niche visual styles.
 \end{abstract}
 
 %------------------------------------------------------------------------
@@ -148,13 +148,11 @@ We also report all three metrics for a \textbf{baseline} condition: 100 images g
 \toprule
 \textbf{Condition} & \textbf{FID}$\downarrow$ & \textbf{CLIP}$\uparrow$ & \textbf{DINO}$\uparrow$ \\
 \midrule
-Baseline (no LoRA) & -- & -- & -- \\
-BLIP-2 (Cond.\ A)  & -- & -- & -- \\
-WD14   (Cond.\ B)  & -- & -- & -- \\
+Baseline (no LoRA) & 306.46 & \textbf{0.2773} & 0.155 \\
+BLIP-2 (Cond.\ A)  & \textbf{261.97} & 0.2508 & \textbf{0.3219} \\
+WD14   (Cond.\ B)  & 272.13 & 0.2718 & 0.2738 \\
 \bottomrule
 \end{tabular}
-\vspace{0.5em}\\
-{\small \textit{To be filled after evaluation runs complete.}}
 \end{table}
 
 \subsection{Qualitative Comparison}
@@ -197,23 +195,30 @@ WD14   (Cond.\ B)  & -- & -- & -- \\
 \section{Discussion and Conclusion}
 
 \paragraph{Findings.}
-\textit{[To be written after evaluation. Anticipated structure: state which condition achieves lower FID and higher DINOv2 similarity, discuss why structured tags or free-form captions better capture the stylistic vocabulary of noir manga, note any CLIP score trade-off.]}
+Table~\ref{tab:quant} reveals a consistent but nuanced pattern.
+Both LoRA conditions substantially reduce FID relative to the baseline (BLIP-2: $-$44.5, WD14: $-$34.3), confirming that fine-tuning on even a small curated set markedly shifts the generated distribution toward the target style.
+BLIP-2 achieves the lower FID (261.97 vs.\ 272.13) and the higher DINOv2 similarity (0.3219 vs.\ 0.2738), indicating stronger \emph{style} fidelity under both distributional and feature-level measures.
+WD14 recovers on text-prompt alignment: its CLIP score of 0.2718 is close to the baseline (0.2773), while BLIP-2 drops to 0.2508.
+The answer to our research question is therefore: BLIP-2 free-form captions produce a LoRA that is more faithful to the source style; WD14 tags produce a LoRA that follows structured evaluation prompts more precisely.
 
-\paragraph{Why captioning matters.}
-The cross-attention mechanism in a latent diffusion model learns to associate image regions with text tokens; the granularity and domain-specificity of those tokens directly determines what the LoRA can adapt.
-BLIP-2 captions, trained on photorealistic web data, may produce tokens that the base SDXL model already handles well, offering little signal for style-specific adaptation.
-WD14 tags, derived from the Danbooru illustration community, supply the stylistic vocabulary in a form the model can bind directly to the trigger token.
-We expect this difference to manifest most clearly in DINOv2 similarity, which is sensitive to texture and line quality rather than semantic content.
+\paragraph{Why BLIP-2 wins on style.}
+This result initially appears counterintuitive.
+WD14 tags supply domain-specific vocabulary (\texttt{screentone}, \texttt{monochrome}, \texttt{dramatic lighting}) absent from BLIP-2's photorealistic training distribution, so one might expect WD14 to better communicate the target aesthetic.
+However, the key variable is \emph{coverage}, not domain specificity.
+BLIP-2 captions describe the full visual composition of each panel — spatial relationships, mood, character posture — providing richer cross-attention targets for every image.
+WD14 tags, being an unordered bag of terms, offer no compositional structure; the model receives the same set of words regardless of layout.
+We hypothesize that BLIP-2's holistic descriptions allow the LoRA to internalize not just the isolated visual atoms of noir manga (ink weight, screentone) but their characteristic arrangement, which is precisely what DINOv2 — sensitive to spatial feature distributions — rewards.
+The CLIP score trade-off is consistent with this explanation: WD14 tags overlap more directly with the structured evaluation prompts (also comma-separated stylistic terms), inflating cosine similarity without necessarily improving style reproduction.
 
 \paragraph{Limitations.}
-Our study is constrained by the size of Manga109-s and our selection of noir-style works from it; the 200-panel training set is small relative to typical LoRA training corpora.
-We study a single sub-genre; whether the findings generalize to shonen action, shojo romance, or other manga aesthetics remains open.
-Compute constraints limit us to rank-32 experiments for the primary comparison; the rank ablation (16, 64) is deferred to supplementary material.
+Our dataset (200 training panels from 87 works) is small relative to typical LoRA corpora; conclusions may not hold at larger scale.
+We study a single sub-genre of manga, and it is unclear whether BLIP-2's compositional advantage generalizes to genres with more uniform panel layouts.
+Our FID estimate uses 100 generated images against 40 test images, below the 10,000-image sample recommended for reliable FID~\cite{heusel2017fid}; all FID values should therefore be interpreted as indicative rather than definitive.
 
 \paragraph{Conclusion.}
-We have presented a controlled study of captioning strategy as a determinant of LoRA style fidelity, using noir manga as a test domain.
-By holding all hyperparameters constant and varying only the caption source, we isolate the annotation step as an independent variable.
-We release our curation code, caption files, and evaluation scripts to facilitate reproducibility and future comparisons against additional captioning strategies, including structured prompting via large language models.
+We have presented a controlled study isolating captioning strategy as a determinant of LoRA style fidelity on noir manga.
+BLIP-2 free-form captions produce higher style fidelity (FID, DINOv2) while WD14 tags yield better text-prompt alignment (CLIP), and practitioners should select the captioning strategy based on whether style reproduction or prompt responsiveness is the primary objective.
+We release all curation code, caption files, training configs, and evaluation scripts to support reproducibility and future comparisons.
 
 %------------------------------------------------------------------------
 {\small

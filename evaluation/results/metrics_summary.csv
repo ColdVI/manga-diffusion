@@ -1,0 +1,4 @@
+run_name,fid,clip_score,dino_sim,notes
+baseline,306.4617,0.2773,0.155,
+blip2,261.9664,0.2508,0.3219,
+wd14,272.1284,0.2718,0.2738,
