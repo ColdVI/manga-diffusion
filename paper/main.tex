@@ -167,12 +167,28 @@ WD14   (Cond.\ B)  & 272.13 & 0.2718 & 0.2738 \\
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\linewidth,height=0.42\textheight,keepaspectratio]{figures/qual_grid.png}
-  \caption{Qualitative comparison for three prompts (rows) across all conditions (columns), fixed seed 0.
-  \textbf{Left}: baseline SDXL generates photorealistic color images with no manga character.
-  \textbf{Center}: BLIP-2 LoRA produces consistent ink linework, screentone texture, and panel-appropriate compositions.
-  \textbf{Right}: WD14 LoRA achieves monochrome manga style but with looser character rendering — note the distant silhouette (bottom row) vs.\ BLIP-2's foregrounded figure.}
+  \includegraphics[width=\linewidth,height=0.40\textheight,keepaspectratio]{figures/qual_grid.png}
+  \caption{Generated images for three prompts (rows) across all conditions (columns), seed 0.
+  \textbf{Left}: baseline SDXL produces photorealistic color images with no manga character.
+  \textbf{Center}: BLIP-2 LoRA produces ink linework, screentone, and panel-appropriate compositions.
+  \textbf{Right}: WD14 LoRA achieves monochrome manga style with looser character rendering.}
   \label{fig:qual}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figures/metrics_bar.pdf}
+  \caption{Metric comparison across all three conditions. Bold outlines mark the winner per metric. BLIP-2 wins on style fidelity (FID, DINOv2); WD14 wins on text-prompt alignment (CLIP).}
+  \label{fig:metrics}
+\end{figure}
+
+\subsection{Caption Comparison}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{figures/caption_compare.pdf}
+  \caption{Three training panels with their auto-generated captions under each condition. BLIP-2 produces compositionally rich sentences; WD14 outputs flat tag lists. The same trigger token \texttt{gknoir style,} is prepended to both before training.}
+  \label{fig:captions}
 \end{figure}
 
 \subsection{Evaluation Prompts}

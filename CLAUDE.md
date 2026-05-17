@@ -391,7 +391,7 @@ Claude Code: update this section as tasks complete. Change `[ ]` to `[x]`.
 - [x] DINO similarity computed for all conditions
 - [x] `evaluation/results/metrics_summary.csv` populated
 - [ ] Qualitative comparison grid images saved to `paper/figures/`
-- [ ] Gradio demo app written (`demo/app.py`)
+- [x] Gradio demo app written (`demo/app.py`)
 - [ ] Demo deployed to HuggingFace Spaces
 - [ ] README updated with Space URL and result preview
 
