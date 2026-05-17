@@ -159,10 +159,11 @@ WD14   (Cond.\ B)  & 272.13 & 0.2718 & 0.2738 \\
 
 \begin{figure}[h]
   \centering
-  % \includegraphics[width=\linewidth]{figures/qual_grid.png}
-  \fbox{\parbox{0.9\linewidth}{\centering \vspace{2cm} \textit{Qualitative comparison grid placeholder.\\
-  Rows: 3 eval prompts. Cols: Baseline / BLIP-2 / WD14.} \vspace{2cm}}}
-  \caption{Side-by-side generation comparison for a fixed seed across all three conditions.}
+  \includegraphics[width=\linewidth]{figures/qual_grid.png}
+  \caption{Qualitative comparison for three prompts (rows) across all conditions (columns), fixed seed 0.
+  \textbf{Left}: baseline SDXL generates photorealistic color images with no manga character.
+  \textbf{Center}: BLIP-2 LoRA produces consistent ink linework, screentone texture, and panel-appropriate compositions.
+  \textbf{Right}: WD14 LoRA achieves monochrome manga style but with looser character rendering — note the distant silhouette (bottom row) vs.\ BLIP-2's foregrounded figure.}
   \label{fig:qual}
 \end{figure}
 

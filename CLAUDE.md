@@ -401,7 +401,7 @@ Claude Code: update this section as tasks complete. Change `[ ]` to `[x]`.
 - [x] `paper/main.tex` drafted (Intro, Related Work, Method complete; Results/Discussion are placeholders pending evaluation)
 - [x] `paper/references.bib` complete (12 entries)
 - [x] Quantitative results table filled in main.tex
-- [ ] Qualitative figure `paper/figures/qual_grid.png` generated
+- [x] Qualitative figure `paper/figures/qual_grid.png` generated
 - [x] Abstract final sentence written (BLIP-2 wins FID+DINO, WD14 wins CLIP)
 - [ ] All figures finalized
 - [ ] Paper submitted to target workshop (or arXiv preprint)
