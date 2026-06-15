@@ -4,6 +4,8 @@ LoRA fine-tuning on Manga109-s to study how captioning strategy affects sub-genr
 
 **Research question:** Does captioning strategy determine sub-genre style fidelity when fine-tuning diffusion models on a niche manga aesthetic?
 
+![Qualitative Comparison](paper/figures/qual_grid.png)
+
 ## Setup
 
 ```bash
