@@ -5,6 +5,7 @@ LoRA fine-tuning on Manga109-s to study how captioning strategy affects sub-genr
 **Research question:** Does captioning strategy determine sub-genre style fidelity when fine-tuning diffusion models on a niche manga aesthetic?
 
 ![Qualitative Comparison](paper/figures/qual_grid.png)
+*Side-by-side qualitative comparison showing the effect of different captioning strategies. From left to right (or top to bottom depending on the grid): Base SDXL (Baseline), LoRA trained with BLIP-2 captions, and LoRA trained with WD14 tag-based captions. All generations use the same standard prompts to evaluate "gknoir" manga style fidelity.*
 
 ## Setup
 
